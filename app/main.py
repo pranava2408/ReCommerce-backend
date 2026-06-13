@@ -11,7 +11,25 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting up API, initializing BuyerRecommender...")
-    BuyerRecommender()
+    engine = BuyerRecommender()
+    
+    # Pre-seed the engine with mock users so the frontend has data to query
+    mock_users = [
+        {
+            "user_id": "buyer-la-001",
+            "latitude": 34.0522,
+            "longitude": -118.2437,
+            "search_history": "Apple iPhone 13, AirPods, Macbooks"
+        },
+        {
+            "user_id": "buyer-ny-002",
+            "latitude": 40.7128,
+            "longitude": -74.0060,
+            "search_history": "Razer Blade Gaming Laptop"
+        }
+    ]
+    engine.add_users(mock_users)
+    
     yield
     logger.info("Shutting down API...")
 
