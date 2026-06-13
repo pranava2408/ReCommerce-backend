@@ -27,6 +27,24 @@ STRANDED_PRODUCTS = [
         "facility_longitude": -74.0050,
         "original_price": 2499.00,
         "deviate_price": 1999.00
+    },
+    {
+        "product_id": "sp-103",
+        "category": "Electronics",
+        "specs": "Apple AirPods Pro (2nd Generation)",
+        "facility_latitude": 34.0200, # Los Angeles
+        "facility_longitude": -118.4900,
+        "original_price": 249.00,
+        "deviate_price": 199.00
+    },
+    {
+        "product_id": "sp-104",
+        "category": "Computers",
+        "specs": "Apple MacBook Air M2, 8GB RAM, 256GB SSD",
+        "facility_latitude": 34.1000, # Los Angeles
+        "facility_longitude": -118.3000,
+        "original_price": 1099.00,
+        "deviate_price": 899.00
     }
 ]
 
