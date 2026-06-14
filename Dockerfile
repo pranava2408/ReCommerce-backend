@@ -1,25 +1,25 @@
-# Use an official Python runtime as a parent image
-FROM python:3.10-slim
+FROM python:3.10
 
-# Set the working directory in the container
-WORKDIR /app
+WORKDIR /code
 
-# Copy the requirements file into the container
-COPY requirements.txt .
+COPY ./requirements.txt /code/requirements.txt
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-# Copy the current directory contents into the container at /app
-COPY . .
+# Set up a new user named "user" with user ID 1000
+RUN useradd -m -u 1000 user
 
-# Hugging Face Spaces run as a non-root user, so we must make sure
-# the cache directories for AI models are writable.
-ENV TRANSFORMERS_CACHE=/tmp/huggingface_cache
-ENV HF_HOME=/tmp/huggingface_cache
+# Switch to the "user" user
+USER user
 
-# Make port 7860 available (Hugging Face Spaces default port)
-EXPOSE 7860
+# Set home to the user's home directory
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH
 
-# Run uvicorn when the container launches
+# Set the working directory to the user's home directory
+WORKDIR $HOME/app
+
+# Copy the current directory contents into the container at $HOME/app setting the owner to the user
+COPY --chown=user . $HOME/app
+
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
