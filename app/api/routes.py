@@ -8,45 +8,8 @@ router = APIRouter()
 def get_recommender() -> BuyerRecommender:
     return BuyerRecommender()
 
-# Mock database of currently stranded products in the logistics network
-STRANDED_PRODUCTS = [
-    {
-        "product_id": "sp-101",
-        "category": "Electronics",
-        "specs": "Apple iPhone 13, 128GB, Midnight - Perfect Condition",
-        "facility_latitude": 34.0520, # Los Angeles
-        "facility_longitude": -118.2430,
-        "original_price": 79900.00,
-        "deviate_price": 69900.00
-    },
-    {
-        "product_id": "sp-102",
-        "category": "Computers",
-        "specs": "Razer Blade 15 Gaming Laptop, RTX 3070",
-        "facility_latitude": 40.7120, # New York
-        "facility_longitude": -74.0050,
-        "original_price": 249900.00,
-        "deviate_price": 199900.00
-    },
-    {
-        "product_id": "sp-103",
-        "category": "Electronics",
-        "specs": "Apple AirPods Pro (2nd Generation)",
-        "facility_latitude": 34.0200, # Los Angeles
-        "facility_longitude": -118.4900,
-        "original_price": 24900.00,
-        "deviate_price": 19900.00
-    },
-    {
-        "product_id": "sp-104",
-        "category": "Computers",
-        "specs": "Apple MacBook Air M2, 8GB RAM, 256GB SSD",
-        "facility_latitude": 34.1000, # Los Angeles
-        "facility_longitude": -118.3000,
-        "original_price": 109900.00,
-        "deviate_price": 89900.00
-    }
-]
+# We no longer use a mock database. Data is fetched directly from Supabase.
+STRANDED_PRODUCTS = []
 
 @router.post("/ingest-users", summary="Populate the engine with Amazon buyers and their preferences")
 def ingest_users(users: List[UserIn], engine: BuyerRecommender = Depends(get_recommender)):
@@ -80,18 +43,49 @@ def get_buyer_deals(user_id: str, engine: BuyerRecommender = Depends(get_recomme
     currently stranded products are a match for them.
     """
     try:
+        from app.config import SUPABASE_URL, SUPABASE_KEY
+        from supabase import create_client, Client
+        supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        
         deals_for_user = []
         
-        # In a real app, we'd query the DB for all active stranded products. 
-        # Here we loop over our mock database.
-        for sp in STRANDED_PRODUCTS:
+        # Query Supabase for stranded products (Items with status RECEIVED)
+        items_resp = supabase.table("Item").select("id, name, originalPrice, status, Category(name), Location(latitude, longitude)").eq("status", "RECEIVED").execute()
+        stranded_items = items_resp.data
+        
+        # If DB is empty, use our mock data fallback just for the demo
+        if not stranded_items:
+            stranded_items = [
+                {
+                    "id": "sp-101",
+                    "Category": {"name": "Electronics"},
+                    "name": "Apple iPhone 13, 128GB, Midnight - Perfect Condition",
+                    "Location": {"latitude": 34.0520, "longitude": -118.2430},
+                    "originalPrice": 79900.00
+                },
+                {
+                    "id": "sp-102",
+                    "Category": {"name": "Computers"},
+                    "name": "Razer Blade 15 Gaming Laptop, RTX 3070",
+                    "Location": {"latitude": 40.7120, "longitude": -74.0050},
+                    "originalPrice": 249900.00
+                }
+            ]
+        
+        for sp in stranded_items:
+            cat_name = sp.get("Category", {}).get("name", "General") if sp.get("Category") else "General"
+            loc = sp.get("Location") or {}
+            lat = loc.get("latitude") or 34.0520
+            lon = loc.get("longitude") or -118.2430
+            orig_price = sp.get("originalPrice", 0)
+            
             # We run the recommender engine to see who wants this product
             product_dict = CancelledProduct(
-                product_id=sp["product_id"],
-                category=sp["category"],
-                specs=sp["specs"],
-                facility_latitude=sp["facility_latitude"],
-                facility_longitude=sp["facility_longitude"]
+                product_id=str(sp["id"]),
+                category=cat_name,
+                specs=sp.get("name", "Unknown item"),
+                facility_latitude=lat,
+                facility_longitude=lon
             ).model_dump()
             
             # Find the best buyers for this product
@@ -101,12 +95,13 @@ def get_buyer_deals(user_id: str, engine: BuyerRecommender = Depends(get_recomme
             user_match = next((r for r in recommended if r["user_id"] == user_id), None)
             
             if user_match:
+                deviate_price = float(orig_price) * 0.85 # 15% off logic
                 deals_for_user.append({
-                    "product_id": sp["product_id"],
-                    "category": sp["category"],
-                    "specs": sp["specs"],
-                    "original_price": sp["original_price"],
-                    "deviate_price": sp["deviate_price"],
+                    "product_id": str(sp["id"]),
+                    "category": cat_name,
+                    "specs": sp.get("name", "Unknown item"),
+                    "original_price": float(orig_price),
+                    "deviate_price": deviate_price,
                     "distance_km": user_match["distance_km"],
                     "estimated_delivery_days": user_match["estimated_delivery_days"],
                     "semantic_match_score": user_match["semantic_match_score"]
@@ -115,3 +110,4 @@ def get_buyer_deals(user_id: str, engine: BuyerRecommender = Depends(get_recomme
         return {"status": "success", "deals": deals_for_user}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+

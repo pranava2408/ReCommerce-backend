@@ -13,23 +13,50 @@ async def lifespan(app: FastAPI):
     logger.info("Starting up API, initializing BuyerRecommender...")
     engine = BuyerRecommender()
     
-    # Pre-seed the engine with mock users so the frontend has data to query
-    mock_users = [
-        {
-            "user_id": "buyer-la-001",
-            "latitude": 34.0522,
-            "longitude": -118.2437,
-            "search_history": "Apple iPhone 13, AirPods, Macbooks"
-        },
-        {
-            "user_id": "buyer-ny-002",
-            "latitude": 40.7128,
-            "longitude": -74.0060,
-            "search_history": "Razer Blade Gaming Laptop"
-        }
-    ]
-    engine.add_users(mock_users)
-    
+    try:
+        from app.config import SUPABASE_URL, SUPABASE_KEY
+        from supabase import create_client, Client
+        
+        supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        
+        # Fetch real users from Supabase
+        users_resp = supabase.table("User").select("id, email, Order(Item(name, Category(name)))").execute()
+        users_data = users_resp.data
+        
+        formatted_users = []
+        for u in users_data:
+            # Build search history from orders
+            history_items = []
+            for o in u.get("Order", []):
+                item = o.get("Item", {})
+                if item:
+                    cat = item.get("Category", {}).get("name", "") if item.get("Category") else ""
+                    name = item.get("name", "")
+                    history_items.append(f"{cat} {name}".strip())
+            
+            search_history = ", ".join(history_items) if history_items else f"Electronics, Gadgets for {u.get('email', '')}"
+            
+            formatted_users.append({
+                "user_id": str(u["id"]),
+                "latitude": 34.0522, # Defaulting due to lack of User location in schema
+                "longitude": -118.2437,
+                "search_history": search_history
+            })
+            
+        if not formatted_users:
+            logger.warning("No users found in Supabase! Adding fallback mock user.")
+            formatted_users.append({
+                "user_id": "buyer-la-001",
+                "latitude": 34.0522,
+                "longitude": -118.2437,
+                "search_history": "Apple iPhone 13, AirPods, Macbooks"
+            })
+            
+        engine.add_users(formatted_users)
+        logger.info(f"Successfully seeded {len(formatted_users)} users from Supabase.")
+    except Exception as e:
+        logger.error(f"Failed to fetch users from Supabase: {e}")
+        
     yield
     logger.info("Shutting down API...")
 
