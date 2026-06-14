@@ -1,3 +1,11 @@
+---
+title: Second Life API
+emoji: 🚀
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+---
 # Second Life Commerce: AI Buyer Recommender Backend
 
 ## Overview
