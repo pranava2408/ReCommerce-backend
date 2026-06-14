@@ -16,8 +16,8 @@ STRANDED_PRODUCTS = [
         "specs": "Apple iPhone 13, 128GB, Midnight - Perfect Condition",
         "facility_latitude": 34.0520, # Los Angeles
         "facility_longitude": -118.2430,
-        "original_price": 799.00,
-        "deviate_price": 699.00
+        "original_price": 79900.00,
+        "deviate_price": 69900.00
     },
     {
         "product_id": "sp-102",
@@ -25,8 +25,8 @@ STRANDED_PRODUCTS = [
         "specs": "Razer Blade 15 Gaming Laptop, RTX 3070",
         "facility_latitude": 40.7120, # New York
         "facility_longitude": -74.0050,
-        "original_price": 2499.00,
-        "deviate_price": 1999.00
+        "original_price": 249900.00,
+        "deviate_price": 199900.00
     },
     {
         "product_id": "sp-103",
@@ -34,8 +34,8 @@ STRANDED_PRODUCTS = [
         "specs": "Apple AirPods Pro (2nd Generation)",
         "facility_latitude": 34.0200, # Los Angeles
         "facility_longitude": -118.4900,
-        "original_price": 249.00,
-        "deviate_price": 199.00
+        "original_price": 24900.00,
+        "deviate_price": 19900.00
     },
     {
         "product_id": "sp-104",
@@ -43,8 +43,8 @@ STRANDED_PRODUCTS = [
         "specs": "Apple MacBook Air M2, 8GB RAM, 256GB SSD",
         "facility_latitude": 34.1000, # Los Angeles
         "facility_longitude": -118.3000,
-        "original_price": 1099.00,
-        "deviate_price": 899.00
+        "original_price": 109900.00,
+        "deviate_price": 89900.00
     }
 ]
 
